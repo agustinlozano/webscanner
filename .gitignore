@@ -1,1 +1,5 @@
 initial-docs.md
+node_modules
+dist
+.serverless
+.env.local
