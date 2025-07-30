@@ -1,0 +1,39 @@
+{
+  "name": "web-scanner",
+  "version": "1.0.0",
+  "description": "A daily scanner for specific web pages to generate summaries and analyze/categorize their content.",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "pnpm build && serverless offline",
+    "deploy": "serverless deploy",
+    "deploy:seed": "pnpm deploy && pnpm seed:configs",
+    "seed:configs": "tsx scripts/seed-configs.ts",
+    "remove": "serverless remove",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "playwright": "^1.54.0",
+    "electrodb": "^2.14.3",
+    "openai": "^4.67.3",
+    "hono": "^4.6.12"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/node": "^22.15.32",
+    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/parser": "^8.34.1",
+    "esbuild": "^0.25.5",
+    "eslint": "^9.29.0",
+    "serverless": "^4.17.1",
+    "serverless-esbuild": "^1.55.1",
+    "serverless-offline": "^14.4.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "license": "MIT"
+}
