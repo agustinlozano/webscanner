@@ -1,5 +1,58 @@
+# Initial docs (keep as needed)
 initial-docs.md
-node_modules
-dist
-.serverless
+
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment files
+.env
 .env.local
+.env.production
+.env.test
+
+# AWS
+.aws/
+
+# Serverless
+.serverless/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# ESLint cache
+.eslintcache
+
+# Optional npm cache directory
+.npm
+
+# Editor directories and files
+.vscode/settings.json
+.vscode/launch.json
+.idea
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
