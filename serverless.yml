@@ -1,0 +1,29 @@
+service: daily-scraper
+frameworkVersion: "4"
+
+provider:
+  name: aws
+  region: us-east-2 # podés cambiar si querés
+  ecr:
+    images:
+      scraperImage:
+        path: . # Ruta a tu Dockerfile
+
+functions:
+  runScraper:
+    image:
+      name: scraperImage
+    timeout: 300 # 5 minutos, podés ajustar
+    memorySize: 1024 # recomendado para Playwright
+    events:
+      - schedule: rate(1 day) # ejecuta cada día
+
+plugins:
+  - serverless-offline # útil en local si usás funciones no dockerizadas
+
+package:
+  patterns:
+    - "!node_modules/**"
+    - "!tests/**"
+    - "!*.md"
+    - "!.git/**"
