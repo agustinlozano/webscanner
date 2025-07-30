@@ -1,6 +1,9 @@
 # Initial docs (keep as needed)
 initial-docs.md
 
+# Scripts
+scripts/
+
 # Dependencies
 node_modules/
 pnpm-lock.yaml
