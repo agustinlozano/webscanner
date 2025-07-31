@@ -6,13 +6,13 @@ provider:
   region: us-east-2 # You can change this if needed
   ecr:
     images:
-      scraperImage:
+      scraper-image:
         path: . # Path to your Dockerfile
 
 functions:
   runScraper:
     image:
-      name: scraperImage
+      name: scraper-image
     timeout: 300 # 5 minutes, adjust as needed
     memorySize: 1024 # Recommended for Playwright
     events:
