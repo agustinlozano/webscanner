@@ -9,7 +9,8 @@ COPY package.json pnpm-lock.yaml* ./
 
 # Install pnpm and dependencies
 RUN npm install -g pnpm@latest
-RUN pnpm install --frozen-lockfile
+# If a pnpm-lock.yaml is present use --frozen-lockfile, otherwise fall back to a normal install
+RUN sh -c "if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; else pnpm install; fi"
 
 # Copy source code and build files
 COPY . .
