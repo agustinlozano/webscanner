@@ -4,7 +4,7 @@
   "description": "A daily scanner for specific web pages to generate summaries and analyze/categorize their content.",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "pnpm build && serverless offline",
+    "dev": "pnpm build && set IS_OFFLINE=true && serverless offline",
     "deploy": "serverless deploy",
     "deploy:seed": "pnpm deploy && pnpm seed:configs",
     "seed:configs": "tsx scripts/seed-configs.ts",
