@@ -2,6 +2,7 @@ import type { Handler, ScheduledEvent, Context } from "aws-lambda";
 import { ScraperService } from "./scraper/scraper-service";
 import { MockScraperService } from "./scraper/mock-scraper-service";
 import { websiteConfigs } from "./utils/website-configs";
+import { saveResultsToFiles } from "./utils/save-results";
 
 export const handler: Handler<ScheduledEvent> = async (
   event: ScheduledEvent,
@@ -40,12 +41,17 @@ export const handler: Handler<ScheduledEvent> = async (
       `Scanner execution completed successfully. Processed ${results.length} sites.`
     );
 
+    // Save results to files
+    const timestamp = new Date().toISOString();
+    const savedFiles = saveResultsToFiles(results, timestamp);
+
     return {
       statusCode: 200,
       body: JSON.stringify({
         message: "Web scanner executed successfully",
-        timestamp: new Date().toISOString(),
+        timestamp,
         sitesProcessed: results.length,
+        savedFiles,
         results: results.map((r) => ({
           name: r.name,
           url: r.url,
