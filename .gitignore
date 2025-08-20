@@ -59,3 +59,8 @@ coverage/
 .Trashes
 ehthumbs.db
 Thumbs.db
+STATUS.md
+.gitignore
+SPRINT.md
+DEVELOPMENT.md
+/results
