@@ -30,6 +30,19 @@ export class ScraperService {
         "--disable-accelerated-2d-canvas",
         "--disable-gpu",
         "--window-size=1920x1080",
+        // Advanced anti-bot detection avoidance
+        "--disable-blink-features=AutomationControlled",
+        "--disable-features=VizDisplayCompositor",
+        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "--disable-extensions",
+        "--disable-plugins",
+        "--disable-images", // Faster loading
+        "--disable-javascript", // Try without JS to avoid detection scripts
+        "--no-first-run",
+        "--disable-default-apps",
+        "--disable-background-timer-throttling",
+        "--disable-backgrounding-occluded-windows",
+        "--disable-renderer-backgrounding",
       ],
     });
   }
@@ -44,20 +57,69 @@ export class ScraperService {
     const page: Page = await this.browser.newPage();
 
     try {
-      // Navigate to the page
-      await page.goto(config.url, {
-        waitUntil: "networkidle",
-        timeout: 60000,
+      // Set realistic user agent and headers via context
+      await page.setExtraHTTPHeaders({
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        DNT: "1",
+        Connection: "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
       });
 
-      // Apply custom delay if specified
-      if (config.customDelay) {
-        console.log(`Waiting ${config.customDelay}ms for custom delay...`);
-        await page.waitForTimeout(config.customDelay);
+      // Remove webdriver property and other automation indicators
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, "webdriver", {
+          get: () => undefined,
+        });
+
+        // Remove automation indicators
+        delete (window as any).cdc_adoQpoasnfa76pfcZLmcfl_Array;
+        delete (window as any).cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+        delete (window as any).cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+      });
+
+      // Navigate with retry mechanism
+      console.log(`Navigating to ${config.url}...`);
+      let retryCount = 0;
+      const maxRetries = 2;
+
+      while (retryCount <= maxRetries) {
+        try {
+          await page.goto(config.url, {
+            waitUntil: "domcontentloaded",
+            timeout: 120000, // 2 minutes timeout
+          });
+          break; // Success, exit retry loop
+        } catch (error) {
+          retryCount++;
+          if (retryCount > maxRetries) {
+            throw error; // Re-throw if max retries exceeded
+          }
+          console.log(
+            `Navigation failed, retrying... (${retryCount}/${maxRetries})`
+          );
+          await page.waitForTimeout(3000 + Math.random() * 2000); // Random delay 3-5s
+        }
       }
+
+      // Apply custom delay with randomization
+      const baseDelay = config.customDelay || 2000;
+      const randomDelay = baseDelay + Math.random() * 2000; // Add 0-2s random
+      console.log(`Waiting ${Math.round(randomDelay)}ms for custom delay...`);
+      await page.waitForTimeout(randomDelay);
+
+      // Additional random wait to appear more human-like
+      const extraDelay = 1000 + Math.random() * 3000; // 1-4s extra
+      console.log(`Additional human-like delay: ${Math.round(extraDelay)}ms`);
+      await page.waitForTimeout(extraDelay);
 
       // Get page title
       const title = await page.title();
+      console.log(`Page title: ${title}`);
 
       // Extract content
       let content: string;
@@ -74,31 +136,54 @@ export class ScraperService {
         }, config.customSelectors);
         content = customContent;
       } else {
-        // Default: extract main content
+        // Enhanced content extraction for government sites
         content = await page.evaluate(() => {
           // Remove script and style elements
-          const scripts = document.querySelectorAll("script, style");
+          const scripts = document.querySelectorAll(
+            "script, style, nav, header, footer"
+          );
           scripts.forEach((el) => el.remove());
 
-          // Try to find main content areas
-          const mainSelectors = [
-            "main",
-            '[role="main"]',
+          // Try specific selectors for government sites first
+          const governmentSelectors = [
+            ".content-main",
             ".main-content",
-            "#main-content",
-            "article",
+            ".page-content",
+            ".article-content",
+            ".news-content",
+            "[role='main']",
+            "main",
             ".content",
+            "#content",
+            ".article",
+            ".news-item",
+            ".press-release",
           ];
 
-          for (const selector of mainSelectors) {
-            const element = document.querySelector(selector);
-            if (element) {
-              return element.textContent || "";
+          let extractedContent = "";
+
+          for (const selector of governmentSelectors) {
+            const elements = document.querySelectorAll(selector);
+            if (elements.length > 0) {
+              elements.forEach((element) => {
+                const text = element.textContent || "";
+                if (text.trim().length > 100) {
+                  // Only include substantial content
+                  extractedContent += text.trim() + "\n\n";
+                }
+              });
+              if (extractedContent.trim().length > 200) {
+                break; // We found good content, stop looking
+              }
             }
           }
 
-          // Fallback to body content
-          return document.body.textContent || "";
+          // If we didn't find specific content, fall back to body
+          if (extractedContent.trim().length < 100) {
+            extractedContent = document.body.textContent || "";
+          }
+
+          return extractedContent;
         });
       }
 
