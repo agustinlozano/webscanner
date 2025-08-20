@@ -1,5 +1,6 @@
 import type { Handler, ScheduledEvent, Context } from "aws-lambda";
 import { ScraperService } from "./scraper/scraper-service";
+import { MockScraperService } from "./scraper/mock-scraper-service";
 import { websiteConfigs } from "./utils/website-configs";
 
 export const handler: Handler<ScheduledEvent> = async (
@@ -9,7 +10,12 @@ export const handler: Handler<ScheduledEvent> = async (
   console.log("Starting web scanner...");
   console.log("Event:", JSON.stringify(event, null, 2));
 
-  const scraper = new ScraperService();
+  // Use mock scraper for local development, real scraper for production
+  const isLocal =
+    process.env.IS_OFFLINE === "true" || process.env.NODE_ENV !== "production";
+  const scraper = isLocal ? new MockScraperService() : new ScraperService();
+
+  console.log(`Using ${isLocal ? "mock" : "real"} scraper service`);
 
   try {
     await scraper.initialize();
