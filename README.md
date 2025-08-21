@@ -97,6 +97,7 @@ The service returns a structured JSON response with scraped content:
       "url": "https://x.com/EmbAustraliaBA",
       "title": "Page Title",
       "content": "Scraped content...",
+      "keywords": ["keyword1", "keyword2"],
       "contentLength": 1250,
       "scrapedAt": "2025-08-21T10:30:00.000Z",
       "status": "success"
