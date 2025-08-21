@@ -1,6 +1,6 @@
-# Web Scanner
+# Web Scraper Service
 
-A daily scanner for specific web pages to generate summaries and analyze/categorize their content.
+A serverless web scraper that extracts content from specified websites and returns structured data for downstream processing. This service focuses solely on scraping and organizing responses - other services handle summarization, keyword matching, and storage.
 
 ## 🚀 Quick Start
 
@@ -68,15 +68,10 @@ pnpm deploy
 src/
 ├── index.ts                 # Main Lambda handler
 ├── scraper/                 # Web scraping logic
-│   └── scraper-service.ts   # Playwright-based scraper
-├── summarizer/              # AI summarization (TODO)
-├── matcher/                 # Keyword matching (TODO)
-├── database/                # DynamoDB models (TODO)
+│   ├── scraper-service.ts   # Playwright-based scraper
+│   └── mock-scraper-service.ts # Mock scraper for local development
 └── utils/                   # Utilities and configurations
     └── website-configs.ts   # Website scraping configurations
-
-scripts/                     # Utility scripts
-└── seed-configs.ts          # Database seeding (TODO)
 ```
 
 ## 🔧 Configuration
@@ -86,31 +81,61 @@ Current websites being monitored:
 - Australian Embassy in Argentina (Twitter)
 - Australian Immigration News Archive
 
-Keywords being tracked:
+## 📊 Response Format
 
-- Subclass 462 visa
-- Work and Holiday visa
-- Argentina-specific visa information
+The service returns a structured JSON response with scraped content:
+
+```json
+{
+  "success": true,
+  "timestamp": "2025-08-21T10:30:00.000Z",
+  "sitesProcessed": 2,
+  "totalSitesConfigured": 2,
+  "results": [
+    {
+      "name": "Australian Embassy in Argentina - Twitter",
+      "url": "https://x.com/EmbAustraliaBA",
+      "title": "Page Title",
+      "content": "Scraped content...",
+      "contentLength": 1250,
+      "scrapedAt": "2025-08-21T10:30:00.000Z",
+      "status": "success"
+    }
+  ],
+  "executionTime": 5432
+}
+```
 
 ## 📋 Development Status
 
-### ✅ Completed (Epic 1 - Task 1)
+### ✅ Completed
 
 - [x] Basic project structure with TypeScript, pnpm, serverless
 - [x] Docker setup with Playwright base image
 - [x] AWS Lambda handler with proper typing
-- [x] Basic scraper service with Playwright
+- [x] Scraper service with Playwright
 - [x] Website configuration system
+- [x] Mock scraper for local development
+- [x] Structured response format
+- [x] Error handling and resilience
 - [x] ESLint configuration
 - [x] Build and deployment scripts
 
-### 🔜 Next Steps
+### 🎯 Service Boundaries
 
-- [ ] Deploy first AWS Lambda using Docker image (Epic 1 - Task 1.3)
-- [ ] Configure EventBridge for daily scheduling (Epic 1 - Task 1.4)
-- [ ] Implement DynamoDB models (Epic 2)
-- [ ] Add OpenAI summarization (Epic 3)
-- [ ] Implement keyword matching (Epic 4)
+This service is **responsible for**:
+
+- Web scraping using Playwright
+- Content extraction and cleaning
+- Structured response formatting
+- Error handling and resilience
+
+This service is **NOT responsible for**:
+
+- Content summarization (handled by downstream services)
+- Keyword matching (handled by downstream services)
+- Data storage (handled by downstream services)
+- File system operations
 
 ## 🛠️ Scripts
 
