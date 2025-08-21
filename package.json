@@ -1,21 +1,19 @@
 {
   "name": "web-scanner",
   "version": "1.0.0",
-  "description": "A daily scanner for specific web pages to generate summaries and analyze/categorize their content.",
+  "description": "A web scraper service that extracts content from specified websites and returns structured data for downstream processing.",
   "scripts": {
     "build": "node build.mjs",
     "dev": "pnpm build && set IS_OFFLINE=true && serverless offline",
     "deploy": "serverless deploy",
     "deploy:prod": "serverless deploy --config serverless.prod.yml",
-    "deploy:seed": "pnpm deploy && pnpm seed:configs",
-    "seed:configs": "tsx scripts/seed-configs.ts",
     "remove": "serverless remove",
     "remove:prod": "serverless remove --config serverless.prod.yml",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "type-check": "tsc --noEmit",
     "docker:build": "pnpm build && docker build -t web-scanner .",
-    "docker:run": "docker run -d -p 9000:8080 -v \"C:\\Users\\Usuario\\websc-anner\\results:/tmp\" --name webscanner-test web-scanner",
+    "docker:run": "docker run -d -p 9000:8080 --name webscanner-test web-scanner",
     "docker:logs": "docker logs webscanner-test",
     "docker:stop": "docker stop webscanner-test",
     "docker:remove": "docker rm webscanner-test",
@@ -30,10 +28,7 @@
     "docker:cleanup-all": "docker system prune -f && docker image prune -f"
   },
   "dependencies": {
-    "playwright": "^1.54.0",
-    "electrodb": "^2.14.3",
-    "openai": "^4.67.3",
-    "hono": "^4.6.12"
+    "playwright": "^1.54.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
