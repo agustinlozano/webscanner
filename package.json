@@ -4,7 +4,8 @@
   "description": "A web scraper service that extracts content from specified websites and returns structured data for downstream processing.",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "pnpm build && set IS_OFFLINE=true && serverless offline",
+    "dev": "bash -lc \"pnpm build && if [ -n \"$(docker ps -a -q -f name=webscanner-test)\" ]; then docker rm -f webscanner-test; fi && docker build -t web-scanner . && docker run -d -p 9000:8080 --name webscanner-test web-scanner && sleep 2 && curl -sS -XPOST 'http://localhost:9000/2015-03-31/functions/function/invocations' -d '{}' -H 'Content-Type: application/json'\"",
+    "dev:win": "powershell -Command \"pnpm build; if (docker ps -a -q -f name=webscanner-test) { docker rm -f webscanner-test } ; docker build -t web-scanner . ; docker run -d -p 9000:8080 --name webscanner-test web-scanner ; Start-Sleep -Seconds 2 ; Invoke-RestMethod -Method Post -Uri 'http://localhost:9000/2015-03-31/functions/function/invocations' -Body '{}' -ContentType 'application/json' | ConvertTo-Json -Depth 5\"",
     "deploy": "serverless deploy",
     "deploy:prod": "serverless deploy --config serverless.prod.yml",
     "remove": "serverless remove",
@@ -39,7 +40,6 @@
     "eslint": "^9.29.0",
     "serverless": "^4.17.1",
     "serverless-esbuild": "^1.55.1",
-    "serverless-offline": "^14.4.0",
     "tsx": "^4.19.2",
     "typescript": "^5.0.0"
   },
