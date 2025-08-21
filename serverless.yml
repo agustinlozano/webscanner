@@ -14,8 +14,7 @@ functions:
     events:
       - schedule: rate(1 day) # Execute daily
 
-plugins:
-  - serverless-offline # Useful for local development with non-dockerized functions
+## Note: serverless-offline removed — local dev uses Docker image and HTTP invocation
 
 package:
   patterns:
