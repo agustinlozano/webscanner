@@ -19,10 +19,10 @@ export class MockScraperService {
         In a real scenario, this would contain the scraped content from ${
           config.url
         }.
-        Keywords to search for: ${
-          config.keywords?.join(", ") || "none specified"
-        }
-        Custom delay: ${config.customDelay || "none"}`,
+        Custom delay: ${config.customDelay || "none"}
+        Custom selectors: ${config.customSelectors?.join(", ") || "none"}
+        
+        This content would be sent to another service for summarization, keyword matching, and storage.`,
       scrapedAt: new Date().toISOString(),
     };
   }
