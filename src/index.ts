@@ -2,13 +2,32 @@ import type { Handler, ScheduledEvent, Context } from "aws-lambda";
 import { ScraperService } from "./scraper/scraper-service";
 import { MockScraperService } from "./scraper/mock-scraper-service";
 import { websiteConfigs } from "./utils/website-configs";
-import { saveResultsToFiles } from "./utils/save-results";
+
+export interface ScrapingResponse {
+  success: boolean;
+  timestamp: string;
+  sitesProcessed: number;
+  totalSitesConfigured: number;
+  results: Array<{
+    name: string;
+    url: string;
+    title: string;
+    content: string;
+    contentLength: number;
+    scrapedAt: string;
+    keywords: string[];
+    status: "success" | "failed";
+    error?: string;
+  }>;
+  executionTime: number;
+}
 
 export const handler: Handler<ScheduledEvent> = async (
   event: ScheduledEvent,
   _: Context
 ) => {
-  console.log("Starting web scanner...");
+  const startTime = Date.now();
+  console.log("Starting web scraper...");
   console.log("Event:", JSON.stringify(event, null, 2));
 
   // Use mock scraper for local development, real scraper for production
@@ -18,56 +37,85 @@ export const handler: Handler<ScheduledEvent> = async (
 
   console.log(`Using ${isLocal ? "mock" : "real"} scraper service`);
 
+  const results = [];
+  const timestamp = new Date().toISOString();
+
   try {
     await scraper.initialize();
-
-    const results = [];
 
     for (const config of websiteConfigs) {
       try {
         console.log(`Processing ${config.name}...`);
         const result = await scraper.scrape(config);
-        results.push(result);
+        results.push({
+          name: result.name,
+          url: result.url,
+          title: result.title,
+          content: result.content,
+          contentLength: result.content.length,
+          scrapedAt: result.scrapedAt,
+          keywords: config.keywords || [],
+          status: "success" as const,
+        });
         console.log(
           `Successfully scraped ${config.name} - Title: ${result.title}`
         );
       } catch (error) {
         console.error(`Error scraping ${config.name}:`, error);
+        results.push({
+          name: config.name,
+          url: config.url,
+          title: "",
+          content: "",
+          contentLength: 0,
+          scrapedAt: timestamp,
+          keywords: config.keywords || [],
+          status: "failed" as const,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
         // Continue with other sites even if one fails
       }
     }
 
+    const executionTime = Date.now() - startTime;
+    const successfulScrapes = results.filter(
+      (r) => r.status === "success"
+    ).length;
+
     console.log(
-      `Scanner execution completed successfully. Processed ${results.length} sites.`
+      `Scraper execution completed. Processed ${successfulScrapes}/${websiteConfigs.length} sites successfully in ${executionTime}ms.`
     );
 
-    // Save results to files
-    const timestamp = new Date().toISOString();
-    const savedFiles = saveResultsToFiles(results, timestamp);
+    const response: ScrapingResponse = {
+      success: true,
+      timestamp,
+      sitesProcessed: successfulScrapes,
+      totalSitesConfigured: websiteConfigs.length,
+      results,
+      executionTime,
+    };
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        message: "Web scanner executed successfully",
-        timestamp,
-        sitesProcessed: results.length,
-        savedFiles,
-        results: results.map((r) => ({
-          name: r.name,
-          url: r.url,
-          title: r.title,
-          contentLength: r.content.length,
-          scrapedAt: r.scrapedAt,
-        })),
-      }),
+      body: JSON.stringify(response),
     };
   } catch (error) {
-    console.error("Error executing web scanner:", error);
+    console.error("Error executing web scraper:", error);
+    const executionTime = Date.now() - startTime;
+
+    const response: ScrapingResponse = {
+      success: false,
+      timestamp,
+      sitesProcessed: 0,
+      totalSitesConfigured: websiteConfigs.length,
+      results,
+      executionTime,
+    };
 
     return {
       statusCode: 500,
       body: JSON.stringify({
-        message: "Error executing web scanner",
+        ...response,
         error: error instanceof Error ? error.message : "Unknown error",
       }),
     };
