@@ -34,4 +34,4 @@ RUN chmod +x /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # Command to run
-CMD ["dist/index.handler"]
+CMD ["dist/bootstrap.js"]
