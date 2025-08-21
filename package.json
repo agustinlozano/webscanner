@@ -11,7 +11,21 @@
     "remove": "serverless remove",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "docker:build": "pnpm build && docker build -t web-scanner .",
+    "docker:run": "docker run -d -p 9000:8080 -v \"C:\\Users\\Usuario\\websc-anner\\results:/tmp\" --name webscanner-test web-scanner",
+    "docker:logs": "docker logs webscanner-test",
+    "docker:stop": "docker stop webscanner-test",
+    "docker:remove": "docker rm webscanner-test",
+    "docker:clean": "docker stop webscanner-test || echo \"Container not running\" && docker rm webscanner-test || echo \"Container not found\"",
+    "docker:restart": "pnpm docker:clean && pnpm docker:build && pnpm docker:run",
+    "docker:test": "powershell -Command \"Invoke-RestMethod -Method Post -Uri 'http://localhost:9000' -Body '{}' -ContentType 'application/json'\"",
+    "docker:test-detailed": "powershell -Command \"$result = Invoke-RestMethod -Method Post -Uri 'http://localhost:9000' -Body '{}' -ContentType 'application/json'; $result.body | ConvertFrom-Json | ConvertTo-Json -Depth 10\"",
+    "docker:shell": "docker exec -it webscanner-test /bin/bash",
+    "docker:inspect": "docker inspect webscanner-test",
+    "docker:ps": "docker ps | findstr webscanner || echo \"No webscanner containers running\"",
+    "docker:images": "docker images | findstr web-scanner || echo \"No web-scanner images found\"",
+    "docker:cleanup-all": "docker system prune -f && docker image prune -f"
   },
   "dependencies": {
     "playwright": "^1.54.0",
