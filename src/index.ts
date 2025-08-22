@@ -2,6 +2,7 @@ import type { Handler, ScheduledEvent, Context } from "aws-lambda";
 import { ScraperService } from "./scraper/scraper-service";
 import { MockScraperService } from "./scraper/mock-scraper-service";
 import { websiteConfigs } from "./utils/website-configs";
+import { postToNotify } from "./utils/notify.api";
 
 export interface ScrapingResponse {
   success: boolean;
@@ -60,6 +61,14 @@ export const handler: Handler<ScheduledEvent> = async (
         console.log(
           `Successfully scraped ${config.name} - Title: ${result.title}`
         );
+
+        postToNotify({
+          error: "",
+          message: `Successfully scraped ${config.name}`,
+          level: "info",
+          timestamp: new Date().toISOString(),
+          payload: result,
+        });
       } catch (error) {
         console.error(`Error scraping ${config.name}:`, error);
         results.push({
@@ -73,6 +82,19 @@ export const handler: Handler<ScheduledEvent> = async (
           status: "failed" as const,
           error: error instanceof Error ? error.message : "Unknown error",
         });
+
+        postToNotify({
+          error: error instanceof Error ? error.message : "Unknown error",
+          message: `Failed to scrape ${config.name}`,
+          level: "error",
+          timestamp: new Date().toISOString(),
+          payload: { name: config.name, url: config.url },
+        });
+
+        // Log the error but continue processing other sites
+        console.error(
+          `Continuing with other sites after error on ${config.name}`
+        );
         // Continue with other sites even if one fails
       }
     }
@@ -111,6 +133,14 @@ export const handler: Handler<ScheduledEvent> = async (
       results,
       executionTime,
     };
+
+    postToNotify({
+      error: error instanceof Error ? error.message : "Unknown error",
+      message: `Failed to execute web scraper`,
+      level: "error",
+      timestamp: new Date().toISOString(),
+      payload: response,
+    });
 
     return {
       statusCode: 500,
