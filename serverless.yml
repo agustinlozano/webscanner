@@ -3,22 +3,28 @@ frameworkVersion: "4"
 
 provider:
   name: aws
-  region: us-east-2 # You can change this if needed
-  runtime: nodejs18.x
+  region: us-east-2
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - ecr:GetDownloadUrlForLayer
+            - ecr:BatchGetImage
+            - ecr:BatchCheckLayerAvailability
+          Resource:
+            - "arn:aws:ecr:us-east-2:849681699653:repository/daily-scraper-web-scraper"
 
 functions:
   runScraper:
-    handler: dist/index.handler
-    timeout: 300 # 5 minutes, adjust as needed
-    memorySize: 1024 # Recommended for Playwright
+    image:
+      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/daily-scraper-web-scraper:v1.3
+    timeout: 300
+    memorySize: 1024
+    environment:
+      BOTLINE_ENDPOINT: ${env:BOTLINE_ENDPOINT}
+      BOTLINE_TOKEN: ${env:BOTLINE_TOKEN}
+      NODE_ENV: production
     events:
-      - schedule: rate(1 day) # Execute daily
-
+      - schedule: rate(1 day)
 ## Note: serverless-offline removed — local dev uses Docker image and HTTP invocation
-
-package:
-  patterns:
-    - "!node_modules/**"
-    - "!tests/**"
-    - "!*.md"
-    - "!.git/**"
