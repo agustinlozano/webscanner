@@ -1,5 +1,5 @@
 # Use the official Playwright image as base - contains Chromium and all dependencies
-FROM mcr.microsoft.com/playwright:v1.55.0-noble
+FROM mcr.microsoft.com/playwright:v1.54.0-noble
 
 # Set the working directory
 WORKDIR /var/task
