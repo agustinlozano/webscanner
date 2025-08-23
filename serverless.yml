@@ -18,7 +18,7 @@ provider:
 functions:
   runScraper:
     image:
-      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/daily-scraper-web-scraper:v1.3
+      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/daily-scraper-web-scraper:latest
     timeout: 300
     memorySize: 1024
     environment:
