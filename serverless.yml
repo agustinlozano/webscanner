@@ -18,7 +18,7 @@ provider:
 functions:
   runScraper:
     image:
-      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/daily-scraper-web-scraper:v1.55.0
+      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/daily-scraper-web-scraper:latest-enhanced
     timeout: 300
     memorySize: 2048 # Increased from 1024 to 2048MB for Playwright
     environment:
@@ -26,5 +26,5 @@ functions:
       BOTLINE_TOKEN: ${env:BOTLINE_TOKEN}
       NODE_ENV: production
     events:
-      - schedule: rate(1 day)
+      - schedule: rate(30 min)
 ## Note: serverless-offline removed — local dev uses Docker image and HTTP invocation
