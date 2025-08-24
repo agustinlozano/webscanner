@@ -1,11 +1,13 @@
 #!/bin/bash
 
+# Usage: IMAGE_TAG=your-tag ./deploy-to-ecr.sh
+
 set -e
 
 # Configuration
 AWS_REGION="us-east-2"  # Match your serverless.yml region
 ECR_REPOSITORY_NAME="daily-scraper-web-scraper"
-IMAGE_TAG="latest"
+IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 echo "🚀 Starting ECR deployment process..."
 
