@@ -3,7 +3,7 @@ import type { ScrapingConfig } from "@/scraper/scraper-service";
 export const websiteConfigs: ScrapingConfig[] = [
   {
     url: "https://www.lamacro.ar/variables",
-    name: "Variables económicas, monetarias y cambiarias del Banco Central de la República Argentina.",
+    name: "🪙 Variables económicas, monetarias y cambiarias del Banco Central de la República Argentina.",
     keywords: [
       "dólar",
       "inflación",
