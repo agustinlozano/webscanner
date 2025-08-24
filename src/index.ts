@@ -64,10 +64,14 @@ export const handler: Handler<ScheduledEvent> = async (
 
         postToNotify({
           error: "",
-          message: `Successfully scraped ${config.name}`,
+          message: `Successfully scraped <i>${config.name}</i>`,
           level: "info",
           timestamp: new Date().toISOString(),
-          payload: result,
+          payload: {
+            ...result,
+            content:
+              '👮🏻 "Scraped content\'s too long to display but it was OK tho ;)"',
+          },
         });
       } catch (error) {
         console.error(`Error scraping ${config.name}:`, error);
