@@ -2,6 +2,17 @@
 
 A serverless web scraper that extracts content from specified websites and returns structured data for downstream processing. This service focuses solely on scraping and organizing responses - other services handle summarization, keyword matching, and storage.
 
+## Communication Flow
+
+![Infrastructure Schema](./public/infra.jpeg)
+
+1. **EventBridge** triggers the Lambda function daily using a cron schedule (`rate(1 day)`)
+2. **Lambda Function** pulls the Docker container image from Amazon ECR and executes it
+3. **Docker Container** runs inside Lambda's execution environment containing:
+   - **Playwright** with headless Chromium browser to scrape configured websites
+   - **Scraper Service** that extracts content, cleans it, and structures the response
+4. **Notification Service** receives real-time updates via HTTP POST to `BOTLINE_ENDPOINT`
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -20,18 +31,11 @@ pnpm install
 # Build the project
 pnpm build
 
-# Test locally (requires serverless-offline)
-pnpm dev
-```
+# Build docker /scripts/docker-build.sh
+chmod +x /scripts/docker-build.sh
 
-### Docker Setup
-
-```bash
-# Build the Docker image
-docker build -t web-scanner .
-
-# Test locally with Docker
-docker run -p 9000:8080 web-scanner
+# Run docker /scripts/docker-run.sh
+/scripts/docker-run.sh
 
 # Test the function
 curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{}'
@@ -39,27 +43,16 @@ curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d
 
 ### AWS Deployment
 
-1. Create an ECR repository:
+1. Auth AWS, Create ECR repository, Build and tag the Docker image, Push to ECR.
 
 ```bash
-aws ecr create-repository --repository-name web-scanner
+# Bash
+IMAGE_TAG=your-tag ./scripts/_main-deploy-to-ecr.sh
 ```
 
-2. Build and push the Docker image:
-
-```bash
-# Get login token
-aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-2.amazonaws.com
-
-# Tag and push
-docker tag web-scanner:latest <account-id>.dkr.ecr.us-east-2.amazonaws.com/web-scanner:latest
-docker push <account-id>.dkr.ecr.us-east-2.amazonaws.com/web-scanner:latest
-```
-
-3. Update `serverless.yml` with your ECR image URI and deploy:
-
-```bash
-pnpm deploy
+```powershell
+# PowerShell
+.\scripts\_main-deploy-to-ecr-win.ps1 [-Tag <string>]
 ```
 
 ## 📁 Project Structure
@@ -74,12 +67,12 @@ src/
     └── website-configs.ts   # Website scraping configurations
 ```
 
-## 🔧 Configuration
+### Network & Security
 
-Current websites being monitored:
-
-- Australian Embassy in Argentina (Twitter)
-- Australian Immigration News Archive
+- Lambda has ECR permissions to pull the container image
+- Outbound HTTPS connections to target websites (no VPC required)
+- External notification service accessed via environment variables (`BOTLINE_TOKEN`)
+- Container runs in AWS Lambda's managed runtime environment
 
 ## 📊 Response Format
 
@@ -107,21 +100,6 @@ The service returns a structured JSON response with scraped content:
 }
 ```
 
-## 📋 Development Status
-
-### ✅ Completed
-
-- [x] Basic project structure with TypeScript, pnpm, serverless
-- [x] Docker setup with Playwright base image
-- [x] AWS Lambda handler with proper typing
-- [x] Scraper service with Playwright
-- [x] Website configuration system
-- [x] Mock scraper for local development
-- [x] Structured response format
-- [x] Error handling and resilience
-- [x] ESLint configuration
-- [x] Build and deployment scripts
-
 ### 🎯 Service Boundaries
 
 This service is **responsible for**:
@@ -140,9 +118,4 @@ This service is **NOT responsible for**:
 
 ## 🛠️ Scripts
 
-- `pnpm build` - Build TypeScript code
-- `pnpm dev` - Build and run with serverless offline
-- `pnpm deploy` - Deploy to AWS
-- `pnpm lint` - Run ESLint
-- `pnpm lint:fix` - Fix ESLint issues
-- `pnpm type-check` - Run TypeScript type checking
+We have a couples one, you can check package.json for the basic ones and ./scripts for more.
