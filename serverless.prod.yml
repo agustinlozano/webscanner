@@ -4,22 +4,26 @@ frameworkVersion: "4"
 provider:
   name: aws
   region: us-east-2
-  ecr:
-    images:
-      scraper-image:
-        uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/web-scanner:latest
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - ecr:GetDownloadUrlForLayer
+            - ecr:BatchGetImage
+            - ecr:BatchCheckLayerAvailability
+          Resource:
+            - "arn:aws:ecr:us-east-2:849681699653:repository/web-scanner"
 
 functions:
   runScraper:
-    image: scraper-image
-    timeout: 300 # 5 minutes, adjust as needed
-    memorySize: 1024 # Recommended for Playwright
+    image:
+      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/web-scanner:latest
+    timeout: 300
+    memorySize: 2048 # Increased for Playwright
+    environment:
+      BOTLINE_ENDPOINT: ${env:BOTLINE_ENDPOINT}
+      BOTLINE_TOKEN: ${env:BOTLINE_TOKEN}
+      NODE_ENV: production
     events:
-      - schedule: rate(1 day) # Execute daily
-
-package:
-  patterns:
-    - "!node_modules/**"
-    - "!tests/**"
-    - "!*.md"
-    - "!.git/**"
+      - schedule: rate(1 day)
