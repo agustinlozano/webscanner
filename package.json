@@ -4,29 +4,16 @@
   "description": "A web scraper service that extracts content from specified websites and returns structured data for downstream processing.",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "bash -lc \"pnpm build && if [ -n \"$(docker ps -a -q -f name=webscanner-test)\" ]; then docker rm -f webscanner-test; fi && docker build -t web-scanner . && docker run -d -p 9000:8080 --name webscanner-test web-scanner && sleep 2 && curl -sS -XPOST 'http://localhost:9000/2015-03-31/functions/function/invocations' -d '{}' -H 'Content-Type: application/json'\"",
-    "dev:win": "powershell -Command \"pnpm build; if (docker ps -a -q -f name=webscanner-test) { docker rm -f webscanner-test } ; docker build -t web-scanner . ; docker run -d -p 9000:8080 --name webscanner-test web-scanner ; Start-Sleep -Seconds 2 ; Invoke-RestMethod -Method Post -Uri 'http://localhost:9000/2015-03-31/functions/function/invocations' -Body '{}' -ContentType 'application/json' | ConvertTo-Json -Depth 5\"",
     "deploy": "serverless deploy",
+    "dev:win": "powershell -Command Invoke-RestMethod -Method Post -Uri 'http://localhost:9000/2015-03-31/functions/function/invocations' -Body '{}' -ContentType 'application/json' | ConvertTo-Json -Depth 5\"",
     "deploy:prod": "serverless deploy --config serverless.prod.yml",
+    "docker:build-push": "pnpm run docker:build && pnpm run docker:push",
+    "invoke": "serverless invoke -f runScraper",
     "remove": "serverless remove",
     "remove:prod": "serverless remove --config serverless.prod.yml",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "type-check": "tsc --noEmit",
-    "docker:build": "pnpm build && docker build -t web-scanner .",
-    "docker:run": "docker run -d -p 9000:8080 --name webscanner-test web-scanner",
-    "docker:logs": "docker logs webscanner-test",
-    "docker:stop": "docker stop webscanner-test",
-    "docker:remove": "docker rm webscanner-test",
-    "docker:clean": "docker stop webscanner-test || echo \"Container not running\" && docker rm webscanner-test || echo \"Container not found\"",
-    "docker:restart": "pnpm docker:clean && pnpm docker:build && pnpm docker:run",
-    "docker:test": "powershell -Command \"Invoke-RestMethod -Method Post -Uri 'http://localhost:9000' -Body '{}' -ContentType 'application/json'\"",
-    "docker:test-detailed": "powershell -Command \"$result = Invoke-RestMethod -Method Post -Uri 'http://localhost:9000' -Body '{}' -ContentType 'application/json'; $result.body | ConvertFrom-Json | ConvertTo-Json -Depth 10\"",
-    "docker:shell": "docker exec -it webscanner-test /bin/bash",
-    "docker:inspect": "docker inspect webscanner-test",
-    "docker:ps": "docker ps | findstr webscanner || echo \"No webscanner containers running\"",
-    "docker:images": "docker images | findstr web-scanner || echo \"No web-scanner images found\"",
-    "docker:cleanup-all": "docker system prune -f && docker image prune -f"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "playwright": "^1.55.0"
