@@ -118,4 +118,4 @@ This service is **NOT responsible for**:
 
 ## 🛠️ Scripts
 
-We have a couples one, you can check package.json for the basic ones and ./scripts for more.
+We have a couple ones, you can check package.json for the basics and ./scripts for even more.
