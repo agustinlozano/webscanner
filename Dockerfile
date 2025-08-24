@@ -1,3 +1,6 @@
+# Based on this Dockerfile.noble
+# https://github.com/microsoft/playwright/blob/main/utils/docker/Dockerfile.noble
+
 # Use Ubuntu Noble as base (more compatible with AWS Lambda)
 FROM ubuntu:noble
 
