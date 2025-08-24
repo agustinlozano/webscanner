@@ -20,31 +20,47 @@ export class ScraperService {
   private browser: Browser | null = null;
 
   async initialize(): Promise<void> {
-    console.log("Initializing Playwright browser...");
+    console.log("Initializing Playwright browser for Lambda...");
+
+    // Lambda-optimized browser launch options
     this.browser = await chromium.launch({
       headless: true,
       args: [
+        // Essential Lambda args
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
         "--disable-gpu",
-        "--window-size=1920x1080",
-        // Advanced anti-bot detection avoidance
-        "--disable-blink-features=AutomationControlled",
-        "--disable-features=VizDisplayCompositor",
-        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        "--disable-extensions",
-        "--disable-plugins",
-        "--disable-images", // Faster loading
-        "--disable-javascript", // Try without JS to avoid detection scripts
-        "--no-first-run",
-        "--disable-default-apps",
+
+        // Memory optimization for Lambda
+        "--memory-pressure-off",
+        "--max_old_space_size=512",
         "--disable-background-timer-throttling",
         "--disable-backgrounding-occluded-windows",
         "--disable-renderer-backgrounding",
+        "--disable-features=TranslateUI,BlinkGenPropertyTrees",
+
+        // Reduce resource usage
+        "--disable-ipc-flooding-protection",
+        "--disable-extensions",
+        "--disable-default-apps",
+        "--disable-sync",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-plugins",
+        "--disable-images",
+
+        // Window size
+        "--window-size=1280x720",
+
+        // User agent
+        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
       ],
+      // Reduce timeout to prevent hangs
+      timeout: 30000,
     });
+
+    console.log("Browser initialized successfully");
   }
 
   async scrape(config: ScrapingConfig): Promise<ScrapingResult> {
@@ -54,79 +70,53 @@ export class ScraperService {
 
     console.log(`Scraping ${config.name} - ${config.url}`);
 
-    const page: Page = await this.browser.newPage();
+    let page: Page | null = null;
 
     try {
-      // Set realistic user agent and headers via context
+      // Create new page with timeout
+      page = await this.browser.newPage();
+      console.log("New page created");
+
+      // Set shorter timeouts for Lambda
+      page.setDefaultTimeout(30000);
+      page.setDefaultNavigationTimeout(30000);
+
+      // Set minimal headers
       await page.setExtraHTTPHeaders({
         "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
         Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Encoding": "gzip, deflate",
         DNT: "1",
         Connection: "keep-alive",
         "Upgrade-Insecure-Requests": "1",
       });
 
-      // Remove webdriver property and other automation indicators
-      await page.addInitScript(() => {
-        Object.defineProperty(navigator, "webdriver", {
-          get: () => undefined,
-        });
-
-        // Remove automation indicators
-        delete (window as any).cdc_adoQpoasnfa76pfcZLmcfl_Array;
-        delete (window as any).cdc_adoQpoasnfa76pfcZLmcfl_Promise;
-        delete (window as any).cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+      // Navigate with single attempt and shorter timeout
+      console.log(`Navigating to ${config.url}...`);
+      await page.goto(config.url, {
+        waitUntil: "domcontentloaded",
+        timeout: 25000, // 25 seconds max
       });
 
-      // Navigate with retry mechanism
-      console.log(`Navigating to ${config.url}...`);
-      let retryCount = 0;
-      const maxRetries = 2;
+      console.log("Navigation successful");
 
-      while (retryCount <= maxRetries) {
-        try {
-          await page.goto(config.url, {
-            waitUntil: "domcontentloaded",
-            timeout: 120000, // 2 minutes timeout
-          });
-          break; // Success, exit retry loop
-        } catch (error) {
-          retryCount++;
-          if (retryCount > maxRetries) {
-            throw error; // Re-throw if max retries exceeded
-          }
-          console.log(
-            `Navigation failed, retrying... (${retryCount}/${maxRetries})`
-          );
-          await page.waitForTimeout(3000 + Math.random() * 2000); // Random delay 3-5s
-        }
-      }
-
-      // Apply custom delay with randomization
-      const baseDelay = config.customDelay || 2000;
-      const randomDelay = baseDelay + Math.random() * 2000; // Add 0-2s random
-      console.log(`Waiting ${Math.round(randomDelay)}ms for custom delay...`);
-      await page.waitForTimeout(randomDelay);
-
-      // Additional random wait to appear more human-like
-      const extraDelay = 1000 + Math.random() * 3000; // 1-4s extra
-      console.log(`Additional human-like delay: ${Math.round(extraDelay)}ms`);
-      await page.waitForTimeout(extraDelay);
+      // Minimal delay for content loading
+      const delay = Math.min(config.customDelay || 2000, 3000); // Max 3 seconds
+      console.log(`Waiting ${delay}ms for content to load...`);
+      await page.waitForTimeout(delay);
 
       // Get page title
       const title = await page.title();
       console.log(`Page title: ${title}`);
 
-      // Extract content
+      // Extract content with simpler approach
       let content: string;
 
       if (config.customSelectors && config.customSelectors.length > 0) {
-        // Use custom selectors if provided
-        const customContent = await page.evaluate((selectors: string[]) => {
+        content = await page.evaluate((selectors: string[]) => {
           return selectors
             .map((selector: string) => {
               const element = document.querySelector(selector);
@@ -134,58 +124,55 @@ export class ScraperService {
             })
             .join("\n");
         }, config.customSelectors);
-        content = customContent;
       } else {
-        // Enhanced content extraction for government sites
+        // Simplified content extraction for Lambda
         content = await page.evaluate(() => {
-          // Remove script and style elements
-          const scripts = document.querySelectorAll(
-            "script, style, nav, header, footer"
-          );
-          scripts.forEach((el) => el.remove());
-
-          // Try specific selectors for government sites first
-          const governmentSelectors = [
-            ".content-main",
-            ".main-content",
-            ".page-content",
-            ".article-content",
-            ".news-content",
-            "[role='main']",
-            "main",
-            ".content",
-            "#content",
-            ".article",
-            ".news-item",
-            ".press-release",
+          // Remove unwanted elements
+          const unwantedSelectors = [
+            "script",
+            "style",
+            "nav",
+            "header",
+            "footer",
+            ".navigation",
+            ".menu",
+            ".sidebar",
+            ".ads",
           ];
 
-          let extractedContent = "";
-
-          for (const selector of governmentSelectors) {
+          unwantedSelectors.forEach((selector) => {
             const elements = document.querySelectorAll(selector);
-            if (elements.length > 0) {
-              elements.forEach((element) => {
-                const text = element.textContent || "";
-                if (text.trim().length > 100) {
-                  // Only include substantial content
-                  extractedContent += text.trim() + "\n\n";
-                }
-              });
-              if (extractedContent.trim().length > 200) {
-                break; // We found good content, stop looking
+            elements.forEach((el) => el.remove());
+          });
+
+          // Try main content selectors
+          const contentSelectors = [
+            "main",
+            "[role='main']",
+            ".main-content",
+            ".content",
+            "#content",
+            ".page-content",
+            ".article",
+            "article",
+          ];
+
+          for (const selector of contentSelectors) {
+            const element = document.querySelector(selector);
+            if (element) {
+              const text = element.textContent || "";
+              if (text.trim().length > 100) {
+                return text.trim();
               }
             }
           }
 
-          // If we didn't find specific content, fall back to body
-          if (extractedContent.trim().length < 100) {
-            extractedContent = document.body.textContent || "";
-          }
-
-          return extractedContent;
+          // Fallback to body
+          return document.body.textContent || "";
         });
       }
+
+      console.log(`Content extracted: ${content.length} characters`);
 
       return {
         url: config.url,
@@ -194,15 +181,31 @@ export class ScraperService {
         content: content.trim(),
         scrapedAt: new Date().toISOString(),
       };
+    } catch (error) {
+      console.error(`Scraping error for ${config.url}:`, error);
+      throw error;
     } finally {
-      await page.close();
+      // Always close the page
+      if (page) {
+        try {
+          await page.close();
+          console.log("Page closed");
+        } catch (closeError) {
+          console.error("Error closing page:", closeError);
+        }
+      }
     }
   }
 
   async close(): Promise<void> {
     if (this.browser) {
-      await this.browser.close();
-      this.browser = null;
+      try {
+        await this.browser.close();
+        console.log("Browser closed");
+        this.browser = null;
+      } catch (error) {
+        console.error("Error closing browser:", error);
+      }
     }
   }
 }
