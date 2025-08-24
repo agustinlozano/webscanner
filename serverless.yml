@@ -26,5 +26,5 @@ functions:
       BOTLINE_TOKEN: ${env:BOTLINE_TOKEN}
       NODE_ENV: production
     events:
-      - schedule: rate(30 min)
+      - schedule: rate(1 day)
 ## Note: serverless-offline removed — local dev uses Docker image and HTTP invocation
