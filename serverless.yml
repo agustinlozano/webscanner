@@ -18,9 +18,9 @@ provider:
 functions:
   runScraper:
     image:
-      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/daily-scraper-web-scraper:v2
+      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/daily-scraper-web-scraper:v6
     timeout: 300
-    memorySize: 2048 # Increased from 1024 to 2048MB for Playwright
+    memorySize: 1024 # We tried 2048MB and it's too much.
     environment:
       BOTLINE_ENDPOINT: ${env:BOTLINE_ENDPOINT}
       BOTLINE_TOKEN: ${env:BOTLINE_TOKEN}
