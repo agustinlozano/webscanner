@@ -2,7 +2,7 @@
 initial-docs.md
 
 # Scripts
-scripts/
+# scripts/
 
 # Dependencies
 node_modules/
@@ -64,3 +64,4 @@ STATUS.md
 SPRINT.md
 DEVELOPMENT.md
 /results
+res.sample.json
