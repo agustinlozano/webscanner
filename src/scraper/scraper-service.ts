@@ -22,45 +22,75 @@ export class ScraperService {
   async initialize(): Promise<void> {
     console.log("Initializing Playwright browser for Lambda...");
 
-    // Lambda-optimized browser launch options
-    this.browser = await chromium.launch({
-      headless: true,
-      args: [
-        // Essential Lambda args
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
+    // Try multiple browser launch strategies for Lambda compatibility
+    const launchStrategies = [
+      // Strategy 1: Minimal args for Lambda
+      {
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--disable-web-security",
+          "--disable-features=VizDisplayCompositor",
+          "--single-process",
+          "--no-zygote",
+        ],
+        timeout: 30000,
+      },
+      // Strategy 2: More aggressive flags
+      {
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--disable-web-security",
+          "--disable-features=VizDisplayCompositor",
+          "--run-all-compositor-stages-before-draw",
+          "--disable-background-timer-throttling",
+          "--disable-renderer-backgrounding",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-ipc-flooding-protection",
+        ],
+        timeout: 30000,
+      },
+    ];
 
-        // Memory optimization for Lambda
-        "--memory-pressure-off",
-        "--max_old_space_size=512",
-        "--disable-background-timer-throttling",
-        "--disable-backgrounding-occluded-windows",
-        "--disable-renderer-backgrounding",
-        "--disable-features=TranslateUI,BlinkGenPropertyTrees",
+    let lastError: Error | null = null;
 
-        // Reduce resource usage
-        "--disable-ipc-flooding-protection",
-        "--disable-extensions",
-        "--disable-default-apps",
-        "--disable-sync",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-plugins",
-        "--disable-images",
+    for (let i = 0; i < launchStrategies.length; i++) {
+      try {
+        console.log(`Trying browser launch strategy ${i + 1}...`);
+        this.browser = await chromium.launch(launchStrategies[i]);
 
-        // Window size
-        "--window-size=1280x720",
+        // Test that browser is actually working
+        console.log("Testing browser connectivity...");
+        const testPage = await this.browser.newPage();
+        await testPage.close();
 
-        // User agent
-        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-      ],
-      // Reduce timeout to prevent hangs
-      timeout: 30000,
-    });
+        console.log("Browser initialized and tested successfully");
+        return;
+      } catch (error) {
+        console.log(`Strategy ${i + 1} failed:`, error);
+        lastError = error as Error;
 
-    console.log("Browser initialized successfully");
+        if (this.browser) {
+          try {
+            await this.browser.close();
+          } catch (closeError) {
+            console.log("Error closing failed browser:", closeError);
+          }
+          this.browser = null;
+        }
+      }
+    }
+
+    throw new Error(
+      `All browser launch strategies failed. Last error: ${lastError?.message}`
+    );
   }
 
   async scrape(config: ScrapingConfig): Promise<ScrapingResult> {
@@ -68,14 +98,24 @@ export class ScraperService {
       throw new Error("Browser not initialized. Call initialize() first.");
     }
 
+    // Check if browser is still connected
+    if (!this.browser.isConnected()) {
+      console.log("Browser disconnected, reinitializing...");
+      await this.initialize();
+      if (!this.browser) {
+        throw new Error("Failed to reinitialize browser");
+      }
+    }
+
     console.log(`Scraping ${config.name} - ${config.url}`);
 
     let page: Page | null = null;
 
     try {
-      // Create new page with timeout
+      // Create new page with additional error handling
+      console.log("Creating new page...");
       page = await this.browser.newPage();
-      console.log("New page created");
+      console.log("New page created successfully");
 
       // Set shorter timeouts for Lambda
       page.setDefaultTimeout(30000);
