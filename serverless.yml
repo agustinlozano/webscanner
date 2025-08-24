@@ -18,7 +18,7 @@ provider:
 functions:
   runScraper:
     image:
-      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/daily-scraper-web-scraper:v1
+      uri: 849681699653.dkr.ecr.us-east-2.amazonaws.com/daily-scraper-web-scraper:v2
     timeout: 300
     memorySize: 2048 # Increased from 1024 to 2048MB for Playwright
     environment:
