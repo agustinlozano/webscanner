@@ -6,7 +6,7 @@ A serverless web scraper that extracts content from specified websites and retur
 
 ![Infrastructure Schema](./public/infra.jpeg)
 
-1. **EventBridge** triggers the Lambda function daily using a cron schedule (`rate(1 day)`)
+1. **EventBridge** triggers the Lambda function daily using a cron schedule `rate(1 day)`
 2. **Lambda Function** pulls the Docker container image from Amazon ECR and executes it
 3. **Docker Container** runs inside Lambda's execution environment containing:
    - **Playwright** with headless Chromium browser to scrape configured websites
@@ -43,16 +43,30 @@ curl -XPOST "http://localhost:9000/2015-03-31/functions/function/invocations" -d
 
 ### AWS Deployment
 
-1. Auth AWS, Create ECR repository, Build and tag the Docker image, Push to ECR.
+1. Build the project
+
+```bash
+pnpm build
+```
+
+2. Auth AWS, Create ECR repository, Build and tag the Docker image, Push to ECR.
 
 ```bash
 # Bash
 IMAGE_TAG=your-tag ./scripts/_main-deploy-to-ecr.sh
 ```
 
+OR
+
 ```powershell
 # PowerShell
 .\scripts\_main-deploy-to-ecr-win.ps1 [-Tag <string>]
+```
+
+3. Deploy the Lambda function using Serverless Framework.
+
+```bash
+pnpm deploy
 ```
 
 ## 📁 Project Structure
@@ -115,7 +129,3 @@ This service is **NOT responsible for**:
 - Keyword matching (handled by downstream services)
 - Data storage (handled by downstream services)
 - File system operations
-
-## 🛠️ Scripts
-
-We have a couple ones, you can check package.json for the basics and ./scripts for even more.
