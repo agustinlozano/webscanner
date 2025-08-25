@@ -2,6 +2,10 @@
   "name": "web-scanner",
   "version": "1.0.0",
   "description": "A web scraper service that extracts content from specified websites and returns structured data for downstream processing.",
+  "author": {
+    "name": "Agustin L. B.",
+    "email": "alozanoblua@gmail.com"
+  },
   "scripts": {
     "build": "node build.mjs",
     "deploy": "serverless deploy",
