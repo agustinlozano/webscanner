@@ -24,18 +24,31 @@ aws ecr create-repository --repository-name $ECR_REPOSITORY_NAME --region $AWS_R
 echo "🔐 Authenticating Docker with ECR..."
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
-# Step 4: Build the Docker image
-echo "🔨 Building Docker image..."
-docker build -t $ECR_REPOSITORY_NAME:$IMAGE_TAG .
+# Step 3.5: Clean up existing images with the same tag
+echo "🧹 Cleaning up existing images with tag: $IMAGE_TAG"
+aws ecr batch-delete-image \
+    --repository-name $ECR_REPOSITORY_NAME \
+    --region $AWS_REGION \
+    --image-ids imageTag=$IMAGE_TAG 2>/dev/null || echo "No existing images to delete"
 
-# Step 5: Tag the image for ECR
+# Step 4: Setup buildx for cross-platform builds
+echo "� Setting up Docker buildx..."
+docker buildx ls | grep -q "lambda-builder" || docker buildx create --name lambda-builder --use
+
+# Step 5: Build and push directly to ECR for x86_64 platform only
 ECR_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY_NAME:$IMAGE_TAG"
-echo "🏷️  Tagging image: $ECR_URI"
-docker tag $ECR_REPOSITORY_NAME:$IMAGE_TAG $ECR_URI
+echo "🔨 Building and pushing Docker image for x86_64 platform..."
+echo "📍 Target URI: $ECR_URI"
 
-# Step 6: Push the image to ECR
-echo "📤 Pushing image to ECR..."
-docker push $ECR_URI
+# Use buildx to build and push directly, avoiding multi-arch manifest
+# This building way fix "manifest not supported issue" (Service: Lambda, Status Code: 400, Request ID: 9f15d2c7-b0d1-49b1-b155-0a9ffb982672)
+docker buildx build \
+  --platform linux/amd64 \
+  --push \
+  --tag $ECR_URI \
+  --provenance=false \
+  --sbom=false \
+  .
 
 echo "✅ Successfully deployed to ECR!"
 echo "📍 Image URI: $ECR_URI"
@@ -43,3 +56,5 @@ echo ""
 echo "🔧 Next steps:"
 echo "   - Update your serverless.yml if needed"
 echo "   - Deploy Lambda function with: pnpm sls deploy"
+echo ""
+echo "ℹ️  Note: Image built for linux/amd64 platform (AWS Lambda compatible)"
