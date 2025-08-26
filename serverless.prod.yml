@@ -14,6 +14,17 @@ provider:
             - ecr:BatchCheckLayerAvailability
           Resource:
             - "arn:aws:ecr:us-east-2:849681699653:repository/web-scanner"
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - !GetAtt ScrappedWebsitesTable.Arn
+            - !Sub "${ScrappedWebsitesTable.Arn}/index/*"
 
 functions:
   runScraper:
@@ -25,5 +36,57 @@ functions:
       BOTLINE_ENDPOINT: ${env:BOTLINE_ENDPOINT}
       BOTLINE_TOKEN: ${env:BOTLINE_TOKEN}
       NODE_ENV: production
+      AWS_REGION: us-east-2
+      SCRAPPED_WEBSITES_TABLE: ScrappedWebsites
     events:
       - schedule: rate(1 day)
+
+resources:
+  Resources:
+    ScrappedWebsitesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ScrappedWebsites
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: S
+          - AttributeName: sk
+            AttributeType: S
+          - AttributeName: gsi1pk
+            AttributeType: S
+          - AttributeName: gsi1sk
+            AttributeType: S
+          - AttributeName: gsi2pk
+            AttributeType: S
+          - AttributeName: gsi2sk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+          - AttributeName: sk
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: gsi1pk-gsi1sk-index
+            KeySchema:
+              - AttributeName: gsi1pk
+                KeyType: HASH
+              - AttributeName: gsi1sk
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: gsi2pk-gsi2sk-index
+            KeySchema:
+              - AttributeName: gsi2pk
+                KeyType: HASH
+              - AttributeName: gsi2sk
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        Tags:
+          - Key: Service
+            Value: daily-scraper
+          - Key: Environment
+            Value: production
