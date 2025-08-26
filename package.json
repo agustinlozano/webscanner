@@ -30,11 +30,14 @@
     "invoke": "serverless invoke -f runScraper",
     "remove": "serverless remove",
     "remove:prod": "serverless remove --config serverless.prod.yml",
+    "db:test": "tsx src/database/database-utils.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "aws-sdk": "^2.1692.0",
+    "electrodb": "^3.4.5",
     "playwright": "^1.55.0"
   },
   "devDependencies": {
